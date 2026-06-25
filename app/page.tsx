@@ -118,11 +118,20 @@ function GlobalStyles() {
 
 /* ─── Theme (dark-only; toggle kept for compat) ─────────────────────────── */
 function useTheme() {
-  const [dark] = useState(true);
+  const [dark, setDark] = useState(false);
   useEffect(() => {
-    document.documentElement.style.colorScheme = "dark";
+    const stored = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = stored === "dark" || (!stored && prefersDark);
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
   }, []);
-  const toggle = () => {}; // no-op — design is always dark
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
   return { dark, toggle };
 }
 
@@ -426,7 +435,7 @@ export default function Home() {
   return (
     <>
       <GlobalStyles />
-      <div style={{ minHeight: "100vh", background: "#000", display: "flex", flexDirection: "column" }}>
+      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
 
         {/* ── NAV ── */}
         <header style={{
@@ -434,7 +443,8 @@ export default function Home() {
           padding: "0 32px", height: 56,
           borderBottom: "1px solid #1a1a1a",
           position: "sticky", top: 0, zIndex: 100,
-          background: "#000",
+          background: "var(--bg)",
+          color: "var(--text)",
         }}>
          
 
@@ -452,14 +462,14 @@ export default function Home() {
                   padding: "0 20px", height: 56,
                   background: "none", border: "none",
                   borderBottom: activeTab === tab.id ? "1.5px solid #fff" : "1.5px solid transparent",
-                  color: activeTab === tab.id ? "#fff" : "#444",
+                  color: activeTab === tab.id ? "var(--text)" : "var(--text-muted)",
                   fontWeight: 600, fontSize: 10, letterSpacing: "0.18em",
                   fontFamily: "var(--font-ui)",
                   cursor: "pointer",
                   transition: "color .15s, border-color .15s",
                 }}
               >
-                <span style={{ color: "#2a2a2a" }}>—</span>
+                <span style={{ color: "var(--text)" }}>—</span>
                 {tab.icon}
                 {tab.label}
               </button>
@@ -472,7 +482,7 @@ export default function Home() {
             style={{
               background: "none", border: "1px solid #1c1c1c",
               padding: "5px 12px", cursor: "pointer",
-              color: "#444", fontSize: 10, letterSpacing: "0.12em",
+              color: "var(--text-muted)", fontSize: 10, letterSpacing: "0.12em",
               fontFamily: "var(--font-ui)", fontWeight: 600,
             }}
           >
@@ -481,10 +491,10 @@ export default function Home() {
         </header>
 
         {/* ── HERO ── */}
-        <div style={{ padding: "36px 32px 28px", borderBottom: "1px solid #111" }}>
+        <div style={{ padding: "36px 32px 28px", borderBottom: "1px solid var(--border)", background: "var(--bg)" }}>
           
           <div style={{ fontSize: "clamp(56px,9vw,88px)", fontWeight: 700, lineHeight: 0.88, letterSpacing: "-0.03em", userSelect: "none" }}>
-            <div style={{ color: "#fff" }}>AVI</div>
+            <div style={{ color: "var(--text)" }}>AVI</div>
             <div style={{ color: "transparent", WebkitTextStroke: "1px #2a2a2a" }}>TRACK</div>
           </div>
    
