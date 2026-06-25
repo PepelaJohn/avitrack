@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f5f3ee;
+  --bg-card: #ffffff;
+  --bg-subtle: #ede9e0;
+  --border: #d4cfc4;
+  --border-strong: #a09890;
+  --text-primary: #1a1714;
+  --text-secondary: #5c5550;
+  --text-muted: #9c9590;
+  --accent: #c8622a;
+  --accent-hover: #a84e1e;
+  --accent-subtle: #f5e8df;
+  --success: #2d6a4f;
+  --success-bg: #d8f3dc;
+  --warn: #b5830a;
+  --warn-bg: #fff3cd;
+  --danger: #c0392b;
+  --danger-bg: #fde8e6;
+  --info: #1a6496;
+  --info-bg: #d9edf7;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.dark {
+  --bg: #141210;
+  --bg-card: #1e1b18;
+  --bg-subtle: #252220;
+  --border: #2e2b28;
+  --border-strong: #4a4540;
+  --text-primary: #f0ece6;
+  --text-secondary: #a09890;
+  --text-muted: #6c6560;
+  --accent: #e07840;
+  --accent-hover: #cc6428;
+  --accent-subtle: #2e1f14;
+  --success: #52b788;
+  --success-bg: #0d2818;
+  --warn: #e9c46a;
+  --warn-bg: #2a2000;
+  --danger: #e07070;
+  --danger-bg: #2a0f0f;
+  --info: #5baad4;
+  --info-bg: #0a1e2e;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.2);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background 0.2s, color 0.2s;
+}
+
+.mono { font-family: 'DM Mono', monospace; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-subtle); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fadeSlideIn 0.3s ease forwards; }
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  letter-spacing: 0.02em;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-secondary:hover:not(:disabled) { background: var(--border); }
+.btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.input-file-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--bg-subtle);
+}
+.input-file-zone:hover, .input-file-zone.drag-over { border-color: var(--accent); background: var(--accent-subtle); }
+.input-file-zone.has-file { border-color: var(--success); background: var(--success-bg); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+}
+.badge-ok { background: var(--success-bg); color: var(--success); }
+.badge-warn { background: var(--warn-bg); color: var(--warn); }
+.badge-danger { background: var(--danger-bg); color: var(--danger); }
+.badge-info { background: var(--info-bg); color: var(--info); }
+.badge-neutral { background: var(--bg-subtle); color: var(--text-secondary); }
