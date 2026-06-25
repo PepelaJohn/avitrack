@@ -2,38 +2,131 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import {
-  Upload, Moon, Sun, Plane, CheckCircle, AlertTriangle,
+  Upload, Plane, CheckCircle, AlertTriangle,
   XCircle, Info, RefreshCw, ChevronDown, ChevronUp,
   FileText, ClipboardCheck
 } from "lucide-react";
 import { QCResult, UtilisationEntry, FlagType } from "@/types";
 
-// ── Hardcoded aircraft list ──────────────────────────────────────────────────
+/* ─── Aircraft list ──────────────────────────────────────────────────────── */
 const AIRCRAFT_LIST = [
-  "5Y-JXA", "5Y-JXB", "5Y-JXC", "5Y-JXD", "5Y-JXE",
-  "5Y-JXH", "5Y-JXI", "5Y-JXL", "5Y-JXM", "5Y-JXO", "5Y-JXP",
+  "5Y-JXA","5Y-JXB","5Y-JXC","5Y-JXD","5Y-JXE",
+  "5Y-JXH","5Y-JXI","5Y-JXL","5Y-JXM","5Y-JXO","5Y-JXP",
 ];
 
-// ── Theme ────────────────────────────────────────────────────────────────────
-function useTheme() {
-  const [dark, setDark] = useState(false);
+/* ─── Global styles injected once ───────────────────────────────────────── */
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #000;
+    --bg-card:   #0a0a0a;
+    --bg-subtle: #060606;
+    --border:    #1c1c1c;
+    --border-mid:#2e2e2e;
+    --text:      #fff;
+    --muted:     #444;
+    --dim:       #888;
+    --accent:    #fff;
+
+    --success:    #fff;
+    --success-bg: #111;
+    --warn:       #ccc;
+    --warn-bg:    #111;
+    --danger:     #fff;
+    --danger-bg:  #1a1a1a;
+    --info:       #aaa;
+    --info-bg:    #111;
+
+    --font-ui:   'Space Grotesk', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── upload zone ── */
+  .input-file-zone {
+    border: 1px dashed var(--border-mid);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .input-file-zone:hover, .input-file-zone.drag-over {
+    border-color: #555;
+    background: #050505;
+  }
+  .input-file-zone.has-file { border-style: solid; border-color: #333; }
+
+  /* ── badges ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px;
+    font-size: 9px; font-weight: 700; letter-spacing: .14em;
+    font-family: var(--font-mono);
+    border: 1px solid currentColor;
+  }
+  .badge-ok      { color: #aaa;  border-color: #333; }
+  .badge-warn    { color: #ccc;  border-color: #444; background: #0f0f0f; }
+  .badge-danger  { color: #fff;  border-color: #555; background: #111; }
+  .badge-info    { color: #888;  border-color: #2a2a2a; }
+  .badge-neutral { color: #555;  border-color: #222; }
+
+  /* ── primary button ── */
+  .btn-primary {
+    background: #fff; color: #000;
+    border: none;
+    padding: 11px 28px;
+    font-size: 11px; font-weight: 700; letter-spacing: .14em;
+    font-family: var(--font-ui);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-primary:hover:not(:disabled) { background: #e0e0e0; }
+  .btn-primary:disabled { background: #1a1a1a; color: #555; cursor: not-allowed; }
+
+  /* ── card ── */
+  .card {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+
+  /* ── fade ── */
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .animate-fade-in { animation: fadeIn .2s ease both; }
+`;
+
+function GlobalStyles() {
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = stored === "dark" || (!stored && prefersDark);
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    const id = "ut-global";
+    if (!document.getElementById(id)) {
+      const el = document.createElement("style");
+      el.id = id;
+      el.textContent = GLOBAL_CSS;
+      document.head.appendChild(el);
+    }
   }, []);
-  const toggle = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  };
+  return null;
+}
+
+/* ─── Theme (dark-only; toggle kept for compat) ─────────────────────────── */
+function useTheme() {
+  const [dark] = useState(true);
+  useEffect(() => {
+    document.documentElement.style.colorScheme = "dark";
+  }, []);
+  const toggle = () => {}; // no-op — design is always dark
   return { dark, toggle };
 }
 
-// ── File upload zone ─────────────────────────────────────────────────────────
+/* ─── File upload zone ───────────────────────────────────────────────────── */
 function FileZone({ label, accept, file, onFile, hint }: {
   label: string; accept: string; file: File | null;
   onFile: (f: File) => void; hint?: string;
@@ -49,22 +142,23 @@ function FileZone({ label, accept, file, onFile, hint }: {
       className={`input-file-zone${dragging ? " drag-over" : ""}${file ? " has-file" : ""}`}
       onClick={() => ref.current?.click()}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => setDragging(false)} onDrop={handleDrop}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
     >
       <input ref={ref} type="file" accept={accept} style={{ display: "none" }}
         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
-      <div className="flex flex-col items-center gap-2">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
         {file ? (
           <>
-            <CheckCircle size={20} style={{ color: "var(--success)" }} />
-            <span style={{ color: "var(--success)", fontWeight: 600, fontSize: 13 }}>{file.name}</span>
-            <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{(file.size / 1024).toFixed(1)} KB · Click to replace</span>
+            <CheckCircle size={18} color="#555" />
+            <span style={{ color: "#aaa", fontWeight: 600, fontSize: 12, fontFamily: "var(--font-mono)" }}>{file.name}</span>
+            <span style={{ color: "#444", fontSize: 10, fontFamily: "var(--font-mono)" }}>{(file.size / 1024).toFixed(1)} KB · click to replace</span>
           </>
         ) : (
           <>
-            <Upload size={20} style={{ color: "var(--text-muted)" }} />
-            <span style={{ color: "var(--text-secondary)", fontWeight: 600, fontSize: 13 }}>{label}</span>
-            {hint && <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{hint}</span>}
+            <Upload size={18} color="#333" />
+            <span style={{ color: "#666", fontWeight: 600, fontSize: 11, letterSpacing: "0.1em" }}>{label}</span>
+            {hint && <span style={{ color: "#333", fontSize: 10, fontFamily: "var(--font-mono)" }}>{hint}</span>}
           </>
         )}
       </div>
@@ -72,15 +166,15 @@ function FileZone({ label, accept, file, onFile, hint }: {
   );
 }
 
-// ── Flag metadata ────────────────────────────────────────────────────────────
+/* ─── Flag metadata ──────────────────────────────────────────────────────── */
 const FLAG_META: Record<FlagType, { label: string; cls: string; icon: React.ReactNode }> = {
-  ok:                    { label: "OK",               cls: "badge-ok",      icon: <CheckCircle size={10} /> },
-  minor_diff:            { label: "MINOR DIFF",       cls: "badge-info",    icon: <Info size={10} /> },
-  major_diff:            { label: "MAJOR DIFF",       cls: "badge-danger",  icon: <XCircle size={10} /> },
-  major_diff_oases_match:{ label: "CHECK TECHLOG",    cls: "badge-danger",  icon: <AlertTriangle size={10} /> },
-  wingtrac_only:         { label: "WINGTRAC ONLY",    cls: "badge-warn",    icon: <AlertTriangle size={10} /> },
-  oases_only:            { label: "OASES ONLY",       cls: "badge-info",    icon: <Info size={10} /> },
-  missing_techlog:       { label: "MISSING TECHLOG",  cls: "badge-danger",  icon: <XCircle size={10} /> },
+  ok:                    { label: "OK",              cls: "badge-ok",     icon: <CheckCircle size={9} /> },
+  minor_diff:            { label: "MINOR DIFF",      cls: "badge-info",   icon: <Info size={9} /> },
+  major_diff:            { label: "MAJOR DIFF",      cls: "badge-danger", icon: <XCircle size={9} /> },
+  major_diff_oases_match:{ label: "CHECK TECHLOG",   cls: "badge-danger", icon: <AlertTriangle size={9} /> },
+  wingtrac_only:         { label: "WINGTRAC ONLY",   cls: "badge-warn",   icon: <AlertTriangle size={9} /> },
+  oases_only:            { label: "OASES ONLY",      cls: "badge-info",   icon: <Info size={9} /> },
+  missing_techlog:       { label: "MISSING TECHLOG", cls: "badge-danger", icon: <XCircle size={9} /> },
 };
 
 function FlagBadge({ flag }: { flag: FlagType }) {
@@ -89,13 +183,16 @@ function FlagBadge({ flag }: { flag: FlagType }) {
 }
 
 function getCellStyle(flag: FlagType): React.CSSProperties {
-  if (flag === "wingtrac_only") return { background: "var(--warn-bg)", color: "var(--warn)", fontWeight: 700 };
-  if (flag === "major_diff_oases_match" || flag === "major_diff") return { background: "var(--danger-bg)", color: "var(--danger)", fontWeight: 700 };
-  if (flag === "oases_only") return { background: "var(--info-bg)", color: "var(--info)" };
+  if (flag === "wingtrac_only")
+    return { background: "#111", color: "#ccc", fontWeight: 700, outline: "1px solid #2a2a2a" };
+  if (flag === "major_diff_oases_match" || flag === "major_diff")
+    return { background: "#1a1a1a", color: "#fff", fontWeight: 700, outline: "1px solid #333" };
+  if (flag === "oases_only")
+    return { background: "#0d0d0d", color: "#777" };
   return {};
 }
 
-// ── Utilisation table ────────────────────────────────────────────────────────
+/* ─── Utilisation table ──────────────────────────────────────────────────── */
 function UtilisationTable({ entries, showQC }: { entries: UtilisationEntry[]; showQC: boolean }) {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const toggle = (d: string) => setExpandedDays(prev => {
@@ -103,19 +200,31 @@ function UtilisationTable({ entries, showQC }: { entries: UtilisationEntry[]; sh
   });
   const maxSectors = Math.max(...entries.map(e => e.sectors.length), 0);
 
+  const thStyle: React.CSSProperties = {
+    padding: "8px 10px", textAlign: "left",
+    color: "#333", fontWeight: 600, fontSize: 9,
+    letterSpacing: "0.18em", fontFamily: "var(--font-mono)",
+    borderBottom: "1px solid #1c1c1c", whiteSpace: "nowrap",
+  };
+  const tdBase: React.CSSProperties = {
+    padding: "7px 10px", fontSize: 12,
+    fontFamily: "var(--font-mono)", color: "#aaa",
+    borderBottom: "1px solid #111",
+  };
+
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: "DM Mono, monospace" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ borderBottom: "2px solid var(--border)" }}>
-            <th style={{ padding: "8px 10px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>DATE</th>
+          <tr>
+            <th style={thStyle}>DATE</th>
             {Array.from({ length: maxSectors }, (_, i) => (
-              <th key={i} style={{ padding: "8px 6px", textAlign: "center", color: "var(--text-muted)", fontWeight: 600 }}>S{i + 1}</th>
+              <th key={i} style={{ ...thStyle, textAlign: "center" }}>S{i + 1}</th>
             ))}
-            <th style={{ padding: "8px 10px", textAlign: "right", color: "var(--text-muted)", fontWeight: 600 }}>TOT MIN</th>
-            <th style={{ padding: "8px 10px", textAlign: "right", color: "var(--text-muted)", fontWeight: 600 }}>HRS</th>
-            <th style={{ padding: "8px 10px", textAlign: "right", color: "var(--text-muted)", fontWeight: 600 }}>CYC</th>
-            {showQC && <th style={{ padding: "8px 10px", color: "var(--text-muted)", fontWeight: 600 }}>FLAGS</th>}
+            <th style={{ ...thStyle, textAlign: "right" }}>TOT MIN</th>
+            <th style={{ ...thStyle, textAlign: "right" }}>HRS</th>
+            <th style={{ ...thStyle, textAlign: "right" }}>CYC</th>
+            {showQC && <th style={thStyle}>FLAGS</th>}
           </tr>
         </thead>
         <tbody>
@@ -125,29 +234,33 @@ function UtilisationTable({ entries, showQC }: { entries: UtilisationEntry[]; sh
             return (
               <React.Fragment key={entry.date}>
                 <tr
-                  style={{ borderBottom: "1px solid var(--border)", background: hasFlags ? "rgba(200,98,42,0.03)" : undefined, cursor: showQC && hasFlags ? "pointer" : undefined }}
+                  style={{ cursor: showQC && hasFlags ? "pointer" : undefined }}
                   onClick={() => showQC && hasFlags && toggle(entry.date)}
                 >
-                  <td style={{ padding: "7px 10px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+                  <td style={{ ...tdBase, whiteSpace: "nowrap", color: "#666" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      {showQC && hasFlags && (isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      {showQC && hasFlags && (isExpanded
+                        ? <ChevronUp size={11} color="#555" />
+                        : <ChevronDown size={11} color="#555" />)}
                       {entry.date.split("-").reverse().join("/")}
                     </span>
                   </td>
                   {Array.from({ length: maxSectors }, (_, i) => {
                     const sector = entry.sectors[i];
-                    if (!sector) return <td key={i} style={{ padding: "7px 6px", textAlign: "center", color: "var(--text-muted)" }}>—</td>;
+                    if (!sector) return (
+                      <td key={i} style={{ ...tdBase, textAlign: "center", color: "#222" }}>—</td>
+                    );
                     return (
-                      <td key={i} style={{ padding: "7px 6px", textAlign: "center", borderRadius: 4, ...getCellStyle(sector.flag as FlagType) }}>
+                      <td key={i} style={{ ...tdBase, textAlign: "center", ...getCellStyle(sector.flag as FlagType) }}>
                         {sector.minutes}
                       </td>
                     );
                   })}
-                  <td style={{ padding: "7px 10px", textAlign: "right", fontWeight: 600 }}>{entry.totalMin}</td>
-                  <td style={{ padding: "7px 10px", textAlign: "right", color: "var(--text-secondary)" }}>{entry.totalHrs.toFixed(2)}</td>
-                  <td style={{ padding: "7px 10px", textAlign: "right", color: "var(--text-secondary)" }}>{entry.totalCycles}</td>
+                  <td style={{ ...tdBase, textAlign: "right", color: "#fff", fontWeight: 600 }}>{entry.totalMin}</td>
+                  <td style={{ ...tdBase, textAlign: "right" }}>{entry.totalHrs.toFixed(2)}</td>
+                  <td style={{ ...tdBase, textAlign: "right" }}>{entry.totalCycles}</td>
                   {showQC && (
-                    <td style={{ padding: "7px 10px" }}>
+                    <td style={tdBase}>
                       {hasFlags && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                           {[...new Set(entry.sectors.filter(s => s.flag !== "ok").map(s => s.flag))].map(f => (
@@ -159,14 +272,14 @@ function UtilisationTable({ entries, showQC }: { entries: UtilisationEntry[]; sh
                   )}
                 </tr>
                 {showQC && isExpanded && (
-                  <tr key={`${entry.date}-detail`} style={{ background: "var(--bg-subtle)" }}>
-                    <td colSpan={maxSectors + (showQC ? 5 : 4)} style={{ padding: "8px 16px 12px" }}>
+                  <tr key={`${entry.date}-detail`}>
+                    <td colSpan={maxSectors + (showQC ? 5 : 4)} style={{ padding: "8px 16px 12px", background: "#060606", borderBottom: "1px solid #111" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         {entry.sectors.filter(s => s.flag !== "ok").map(s => (
-                          <div key={s.sectorIndex} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 10px", background: "var(--bg-card)", borderRadius: 6, border: "1px solid var(--border)" }}>
-                            <span style={{ color: "var(--text-muted)", fontSize: 11, minWidth: 60 }}>Sector {s.sectorIndex}</span>
+                          <div key={s.sectorIndex} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 10px", border: "1px solid #1a1a1a" }}>
+                            <span style={{ color: "#333", fontSize: 10, minWidth: 60, fontFamily: "var(--font-mono)" }}>Sector {s.sectorIndex}</span>
                             <FlagBadge flag={s.flag as FlagType} />
-                            <span style={{ color: "var(--text-secondary)", fontSize: 11, flex: 1 }}>{s.comment}</span>
+                            <span style={{ color: "#555", fontSize: 11, flex: 1 }}>{s.comment}</span>
                           </div>
                         ))}
                       </div>
@@ -182,88 +295,101 @@ function UtilisationTable({ entries, showQC }: { entries: UtilisationEntry[]; sh
   );
 }
 
-// ── QC summary cards ─────────────────────────────────────────────────────────
+/* ─── QC summary ─────────────────────────────────────────────────────────── */
 function QCSummary({ result }: { result: QCResult }) {
   const s = result.summary;
   const items = [
-    { label: "Total Sectors", val: s.total,        cls: "badge-neutral" },
-    { label: "OK",            val: s.ok,            cls: "badge-ok" },
-    { label: "Check Techlog", val: s.majorDiff,     cls: "badge-danger" },
-    { label: "Wingtrac Only", val: s.wingtracOnly,  cls: "badge-warn" },
-    { label: "Oases Only",    val: s.oasesOnly,     cls: "badge-info" },
+    { label: "TOTAL SECTORS", val: s.total },
+    { label: "OK",            val: s.ok },
+    { label: "CHECK TECHLOG", val: s.majorDiff },
+    { label: "WINGTRAC ONLY", val: s.wingtracOnly },
+    { label: "OASES ONLY",    val: s.oasesOnly },
   ];
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-      {items.map(item => (
-        <div key={item.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 16px", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, minWidth: 110 }}>
-          <span style={{ fontSize: 22, fontWeight: 700, fontFamily: "DM Mono" }}>{item.val}</span>
-          <span style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", marginTop: 2 }}>{item.label}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", border: "1px solid #1c1c1c", marginBottom: 20 }}>
+      {items.map((item, i) => (
+        <div key={item.label} style={{
+          padding: "14px 16px",
+          borderRight: i < items.length - 1 ? "1px solid #1c1c1c" : "none",
+        }}>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", fontFamily: "var(--font-mono)", lineHeight: 1 }}>{item.val}</div>
+          <div style={{ fontSize: 9, letterSpacing: "0.16em", color: "#444", marginTop: 5, fontFamily: "var(--font-mono)", fontWeight: 600 }}>{item.label}</div>
         </div>
       ))}
     </div>
   );
 }
 
-// ── Shared select/input styles ────────────────────────────────────────────────
-const selectStyle: React.CSSProperties = {
-  width: "100%", padding: "8px 10px", background: "var(--bg-subtle)",
-  border: "1px solid var(--border)", borderRadius: 6, color: "var(--text-primary)",
-  fontFamily: "Syne, sans-serif", fontSize: 13,
+/* ─── Shared field styles ────────────────────────────────────────────────── */
+const fieldLabel: React.CSSProperties = {
+  display: "block", marginBottom: 6,
+  fontSize: 9, fontWeight: 600, letterSpacing: "0.18em",
+  color: "#444", fontFamily: "var(--font-mono)",
 };
-const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "8px 10px", background: "var(--bg-subtle)",
-  border: "1px solid var(--border)", borderRadius: 6, color: "var(--text-primary)",
-  fontFamily: "DM Mono, monospace", fontSize: 13,
-};
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: "var(--text-muted)", fontWeight: 600, display: "block", marginBottom: 4,
+const fieldControl: React.CSSProperties = {
+  width: "100%", padding: "9px 12px",
+  background: "#060606", border: "1px solid #1c1c1c",
+  color: "#fff", fontFamily: "var(--font-mono)", fontSize: 12,
+  outline: "none", appearance: "none", WebkitAppearance: "none",
+  colorScheme: "dark" as React.CSSProperties["colorScheme"],
 };
 
-// ── Aircraft + month selectors (shared) ───────────────────────────────────────
+/* ─── Aircraft + month selectors ─────────────────────────────────────────── */
 function AircraftMonthSelectors({ aircraft, month, onAircraft, onMonth }: {
   aircraft: string; month: string;
   onAircraft: (v: string) => void; onMonth: (v: string) => void;
 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
       <div>
-        <label style={labelStyle}>AIRCRAFT</label>
-        <select value={aircraft} onChange={e => onAircraft(e.target.value)} style={selectStyle}>
-          <option value="">Select aircraft…</option>
+        <label style={fieldLabel}>AIRCRAFT REG</label>
+        <select value={aircraft} onChange={e => onAircraft(e.target.value)} style={fieldControl}>
+          <option value="">Select registration…</option>
           {AIRCRAFT_LIST.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
       </div>
       <div>
-        <label style={labelStyle}>MONTH</label>
-        <input type="month" value={month} onChange={e => onMonth(e.target.value)} style={inputStyle} />
+        <label style={fieldLabel}>PERIOD</label>
+        <input type="month" value={month} onChange={e => onMonth(e.target.value)} style={fieldControl} />
       </div>
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+/* ─── Section label ──────────────────────────────────────────────────────── */
+function SectionLabel({ n, children }: { n: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+      <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "#444", fontWeight: 600, letterSpacing: "0.18em", whiteSpace: "nowrap" }}>
+        {n} / {children}
+      </span>
+      <div style={{ flex: 1, height: 1, background: "#1a1a1a" }} />
+    </div>
+  );
+}
+
+/* ─── Main page ──────────────────────────────────────────────────────────── */
 export default function Home() {
   const { dark, toggle } = useTheme();
   const [activeTab, setActiveTab] = useState<"fill" | "qc">("fill");
 
-  // ── Fill tab state ──
-  const [fillOasesFile, setFillOasesFile]     = useState<File | null>(null);
-  const [fillAircraft,  setFillAircraft]       = useState("");
-  const [fillMonth,     setFillMonth]           = useState("");
-  const [fillLoading,   setFillLoading]         = useState(false);
-  const [fillResult,    setFillResult]           = useState<{ entries: UtilisationEntry[]; totalFlights: number } | null>(null);
-  const [fillError,     setFillError]           = useState("");
+  // Fill tab
+  const [fillOasesFile, setFillOasesFile] = useState<File | null>(null);
+  const [fillAircraft,  setFillAircraft]  = useState("");
+  const [fillMonth,     setFillMonth]     = useState("");
+  const [fillLoading,   setFillLoading]   = useState(false);
+  const [fillResult,    setFillResult]    = useState<{ entries: UtilisationEntry[]; totalFlights: number } | null>(null);
+  const [fillError,     setFillError]     = useState("");
 
-  // ── QC tab state ──
-  const [qcOasesFile,   setQcOasesFile]         = useState<File | null>(null);
-  const [wingtracFile,  setWingtracFile]         = useState<File | null>(null);
-  const [qcAircraft,   setQcAircraft]           = useState("");
-  const [qcMonth,      setQcMonth]              = useState("");
-  const [qcLoading,    setQcLoading]            = useState(false);
-  const [qcResult,     setQcResult]             = useState<QCResult | null>(null);
-  const [qcError,      setQcError]              = useState("");
+  // QC tab
+  const [qcOasesFile,  setQcOasesFile]  = useState<File | null>(null);
+  const [wingtracFile, setWingtracFile] = useState<File | null>(null);
+  const [qcAircraft,  setQcAircraft]   = useState("");
+  const [qcMonth,     setQcMonth]      = useState("");
+  const [qcLoading,   setQcLoading]    = useState(false);
+  const [qcResult,    setQcResult]     = useState<QCResult | null>(null);
+  const [qcError,     setQcError]      = useState("");
 
-  // ── Fill handler ──
   const runFill = async () => {
     if (!fillOasesFile || !fillAircraft || !fillMonth) return;
     setFillLoading(true); setFillError(""); setFillResult(null);
@@ -272,7 +398,7 @@ export default function Home() {
       fd.append("oasesFile", fillOasesFile);
       fd.append("aircraft", fillAircraft);
       fd.append("month", fillMonth);
-      const res = await fetch("/api/fill-utilisation", { method: "POST", body: fd });
+      const res  = await fetch("/api/fill-utilisation", { method: "POST", body: fd });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setFillResult(data);
@@ -280,7 +406,6 @@ export default function Home() {
     finally { setFillLoading(false); }
   };
 
-  // ── QC handler ──
   const runQCCheck = async () => {
     if (!qcOasesFile || !wingtracFile || !qcAircraft || !qcMonth) return;
     setQcLoading(true); setQcError(""); setQcResult(null);
@@ -290,7 +415,7 @@ export default function Home() {
       fd.append("wingtracFile", wingtracFile);
       fd.append("aircraft", qcAircraft);
       fd.append("month", qcMonth);
-      const res = await fetch("/api/run-qc", { method: "POST", body: fd });
+      const res  = await fetch("/api/run-qc", { method: "POST", body: fd });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setQcResult(data.qcResult);
@@ -299,152 +424,237 @@ export default function Home() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      {/* Header */}
-      <header style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-card)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "var(--shadow)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Plane size={14} color="white" />
+    <>
+      <GlobalStyles />
+      <div style={{ minHeight: "100vh", background: "#000", display: "flex", flexDirection: "column" }}>
+
+        {/* ── NAV ── */}
+        <header style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 32px", height: 56,
+          borderBottom: "1px solid #1a1a1a",
+          position: "sticky", top: 0, zIndex: 100,
+          background: "#000",
+        }}>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 26, height: 26,
+              border: "1.5px solid #fff",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Plane size={12} color="#fff" />
+            </div>
+            <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.12em" }}>
+              UTIL<span style={{ color: "#555" }}>TRACK</span>
+            </span>
           </div>
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "0.04em" }}>
-            UTIL<span style={{ color: "var(--accent)" }}>TRACK</span>
+
+          {/* Nav links — Montek style */}
+          <nav style={{ display: "flex", gap: 0 }}>
+            {([
+              { id: "fill" as const, label: "FILL",    icon: <FileText size={11} /> },
+              { id: "qc"   as const, label: "QUALITY", icon: <ClipboardCheck size={11} /> },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "0 20px", height: 56,
+                  background: "none", border: "none",
+                  borderBottom: activeTab === tab.id ? "1.5px solid #fff" : "1.5px solid transparent",
+                  color: activeTab === tab.id ? "#fff" : "#444",
+                  fontWeight: 600, fontSize: 10, letterSpacing: "0.18em",
+                  fontFamily: "var(--font-ui)",
+                  cursor: "pointer",
+                  transition: "color .15s, border-color .15s",
+                }}
+              >
+                <span style={{ color: "#2a2a2a" }}>—</span>
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Theme toggle (kept for compat, minimal styling) */}
+          <button
+            onClick={toggle}
+            style={{
+              background: "none", border: "1px solid #1c1c1c",
+              padding: "5px 12px", cursor: "pointer",
+              color: "#444", fontSize: 10, letterSpacing: "0.12em",
+              fontFamily: "var(--font-ui)", fontWeight: 600,
+            }}
+          >
+            {dark ? "LIGHT" : "DARK"}
+          </button>
+        </header>
+
+        {/* ── HERO ── */}
+        <div style={{ padding: "36px 32px 28px", borderBottom: "1px solid #111" }}>
+          <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "#333", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
+            AIRCRAFT UTILISATION MANAGER · v2.0
+          </div>
+          <div style={{ fontSize: "clamp(56px,9vw,88px)", fontWeight: 700, lineHeight: 0.88, letterSpacing: "-0.03em", userSelect: "none" }}>
+            <div style={{ color: "#fff" }}>UTIL</div>
+            <div style={{ color: "transparent", WebkitTextStroke: "1px #2a2a2a" }}>TRACK</div>
+          </div>
+          <p style={{ marginTop: 14, fontSize: 11, color: "#444", letterSpacing: "0.04em", maxWidth: 360, lineHeight: 1.8 }}>
+            Automated sector reconciliation between Oases and Wingtrac.
+            Discrepancies &gt;5 min flagged for techlog review.
+          </p>
+        </div>
+
+        {/* ── BODY ── */}
+        <main style={{ flex: 1, maxWidth: 1100, width: "100%", margin: "0 auto", padding: "28px 32px" }}>
+
+          {/* ═══ FILL TAB ═══ */}
+          {activeTab === "fill" && (
+            <div className="animate-fade-in">
+              <div className="card" style={{ padding: 24 }}>
+                <SectionLabel n="01">OASES IMPORT</SectionLabel>
+
+                <div style={{ marginBottom: 16 }}>
+                  <FileZone
+                    label="OASES EXPORT"
+                    accept=".xls,.xlsx"
+                    file={fillOasesFile}
+                    onFile={setFillOasesFile}
+                    hint=".xls / .xlsx · single aircraft"
+                  />
+                </div>
+
+                <AircraftMonthSelectors
+                  aircraft={fillAircraft} month={fillMonth}
+                  onAircraft={setFillAircraft} onMonth={setFillMonth}
+                />
+
+                <button
+                  className="btn-primary"
+                  onClick={runFill}
+                  disabled={!fillOasesFile || !fillAircraft || !fillMonth || fillLoading}
+                >
+                  {fillLoading
+                    ? <span style={{ display: "flex", alignItems: "center", gap: 6 }}><RefreshCw size={12} /> PROCESSING…</span>
+                    : "GENERATE UTILISATION TABLE"}
+                </button>
+
+                {fillError && (
+                  <div style={{ marginTop: 12, padding: "10px 14px", border: "1px solid #333", color: "#888", fontSize: 11, fontFamily: "var(--font-mono)" }}>
+                    {fillError}
+                  </div>
+                )}
+              </div>
+
+              {fillResult && (
+                <div className="card animate-fade-in" style={{ padding: 24, marginTop: 12 }}>
+                  <SectionLabel n="02">RESULT</SectionLabel>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.06em" }}>{fillAircraft}</span>
+                    <span style={{ color: "#444", fontSize: 11, fontFamily: "var(--font-mono)" }}>{fillMonth}</span>
+                    <span className="badge badge-neutral">{fillResult.totalFlights} SECTORS</span>
+                  </div>
+                  <UtilisationTable entries={fillResult.entries} showQC={false} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══ QC TAB ═══ */}
+          {activeTab === "qc" && (
+            <div className="animate-fade-in">
+              <div className="card" style={{ padding: 24 }}>
+                <SectionLabel n="01">QC RECONCILIATION</SectionLabel>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                  <FileZone label="OASES EXPORT"  accept=".xls,.xlsx" file={qcOasesFile}  onFile={setQcOasesFile}  hint=".xls / .xlsx" />
+                  <FileZone label="WINGTRAC DATA" accept=".csv"        file={wingtracFile} onFile={setWingtracFile} hint="wingtrac_data.csv" />
+                </div>
+
+                <AircraftMonthSelectors
+                  aircraft={qcAircraft} month={qcMonth}
+                  onAircraft={setQcAircraft} onMonth={setQcMonth}
+                />
+
+                <button
+                  className="btn-primary"
+                  onClick={runQCCheck}
+                  disabled={!qcOasesFile || !wingtracFile || !qcAircraft || !qcMonth || qcLoading}
+                >
+                  {qcLoading
+                    ? <span style={{ display: "flex", alignItems: "center", gap: 6 }}><RefreshCw size={12} /> RUNNING QC…</span>
+                    : "RUN QUALITY CHECK"}
+                </button>
+
+                {qcError && (
+                  <div style={{ marginTop: 12, padding: "10px 14px", border: "1px solid #333", color: "#888", fontSize: 11, fontFamily: "var(--font-mono)" }}>
+                    {qcError}
+                  </div>
+                )}
+              </div>
+
+              {/* QC logic legend */}
+              <div style={{ marginTop: 12, padding: "16px 18px", border: "1px solid #111", background: "#060606" }}>
+                <div style={{ fontSize: 9, letterSpacing: "0.2em", color: "#333", fontFamily: "var(--font-mono)", fontWeight: 600, marginBottom: 12 }}>
+                  QC LOGIC / THRESHOLD ±5 MIN
+                </div>
+                {[
+                  { dot: "#fff",  text: "Diff ≤5 min — OK, use Oases value" },
+                  { dot: "#888",  text: "Diff >5 min — flagged for techlog verification" },
+                  { dot: "#555",  text: "Wingtrac only — fill value, highlight for review" },
+                  { dot: "#333",  text: "Oases only — flag, no Wingtrac match" },
+                ].map((row, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, fontSize: 11, color: "#555" }}>
+                    <div style={{ width: 6, height: 6, background: row.dot, flexShrink: 0 }} />
+                    {row.text}
+                  </div>
+                ))}
+              </div>
+
+              {qcResult && (
+                <div className="card animate-fade-in" style={{ padding: 24, marginTop: 12 }}>
+                  <SectionLabel n="02">RESULT</SectionLabel>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.06em" }}>{qcResult.aircraft}</span>
+                    <span style={{ color: "#444", fontSize: 11, fontFamily: "var(--font-mono)" }}>{qcResult.month}</span>
+                  </div>
+
+                  <QCSummary result={qcResult} />
+
+                  {/* Legend */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14, padding: "8px 12px", border: "1px solid #111", fontSize: 10 }}>
+                    <span style={{ color: "#333", fontWeight: 600, fontSize: 9, letterSpacing: "0.14em", marginRight: 4, fontFamily: "var(--font-mono)" }}>LEGEND</span>
+                    <span className="badge badge-ok"><CheckCircle size={8} /> OK</span>
+                    <span className="badge badge-warn"><AlertTriangle size={8} /> WINGTRAC ONLY</span>
+                    <span className="badge badge-danger"><XCircle size={8} /> CHECK TECHLOG</span>
+                    <span className="badge badge-info"><Info size={8} /> OASES ONLY</span>
+                  </div>
+
+                  <UtilisationTable entries={qcResult.entries} showQC={true} />
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+
+        {/* ── FOOTER ── */}
+        <footer style={{
+          borderTop: "1px solid #111",
+          padding: "14px 32px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <span style={{ fontSize: 9, letterSpacing: "0.18em", color: "#2a2a2a", fontFamily: "var(--font-mono)" }}>
+            UTILTRACK · AIRCRAFT UTILISATION AUTOMATION
           </span>
-          <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 6 }}>Aircraft Utilisation Manager</span>
-        </div>
-        <button onClick={toggle} style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--text-secondary)", fontSize: 12 }}>
-          {dark ? <Sun size={13} /> : <Moon size={13} />} {dark ? "Light" : "Dark"}
-        </button>
-      </header>
-
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px" }}>
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "2px solid var(--border)" }}>
-          {([
-            { id: "fill" as const, label: "Fill Utilisation",  icon: <FileText size={14} /> },
-            { id: "qc"   as const, label: "Quality Check",     icon: <ClipboardCheck size={14} /> },
-          ]).map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", background: "none", border: "none", borderBottom: activeTab === tab.id ? "2px solid var(--accent)" : "2px solid transparent", marginBottom: -2, color: activeTab === tab.id ? "var(--accent)" : "var(--text-secondary)", fontWeight: activeTab === tab.id ? 700 : 500, fontSize: 13, cursor: "pointer", fontFamily: "Syne, sans-serif", transition: "color 0.15s" }}>
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── FILL TAB ── */}
-        {activeTab === "fill" && (
-          <div className="animate-fade-in">
-            <div className="card" style={{ padding: "24px" }}>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>Fill Utilisation from Oases</div>
-                <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
-                  Upload the Oases export for a single aircraft. Flights are sorted by departure time and filled into Sector 1, 2, 3… in order.
-                </div>
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <FileZone label="Oases Export (.xls / .xlsx)" accept=".xls,.xlsx" file={fillOasesFile} onFile={setFillOasesFile} hint="Single aircraft Oases export" />
-              </div>
-
-              <AircraftMonthSelectors
-                aircraft={fillAircraft} month={fillMonth}
-                onAircraft={setFillAircraft} onMonth={setFillMonth}
-              />
-
-              <button
-                className="btn-primary"
-                onClick={runFill}
-                disabled={!fillOasesFile || !fillAircraft || !fillMonth || fillLoading}
-              >
-                {fillLoading
-                  ? <span style={{ display: "flex", alignItems: "center", gap: 6 }}><RefreshCw size={13} /> Processing…</span>
-                  : "Generate Utilisation Table"}
-              </button>
-
-              {fillError && (
-                <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--danger-bg)", borderRadius: 6, color: "var(--danger)", fontSize: 12 }}>{fillError}</div>
-              )}
-            </div>
-
-            {fillResult && (
-              <div className="card animate-fade-in" style={{ padding: "24px", marginTop: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{fillAircraft}</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{fillMonth}</span>
-                  <span className="badge badge-ok">{fillResult.totalFlights} sectors</span>
-                </div>
-                <UtilisationTable entries={fillResult.entries} showQC={false} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── QC TAB ── */}
-        {activeTab === "qc" && (
-          <div className="animate-fade-in">
-            <div className="card" style={{ padding: "24px" }}>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>Quality Check — Wingtrac vs Oases</div>
-                <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
-                  Flights matched sequentially by departure order per day. Discrepancies &gt;5 min flagged for techlog verification.
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                <FileZone label="Oases Export (.xls / .xlsx)" accept=".xls,.xlsx" file={qcOasesFile} onFile={setQcOasesFile} hint="Single aircraft Oases export" />
-                <FileZone label="Wingtrac Data (.csv)" accept=".csv" file={wingtracFile} onFile={setWingtracFile} hint="wingtrac_data.csv" />
-              </div>
-
-              <AircraftMonthSelectors
-                aircraft={qcAircraft} month={qcMonth}
-                onAircraft={setQcAircraft} onMonth={setQcMonth}
-              />
-
-              <button
-                className="btn-primary"
-                onClick={runQCCheck}
-                disabled={!qcOasesFile || !wingtracFile || !qcAircraft || !qcMonth || qcLoading}
-              >
-                {qcLoading
-                  ? <span style={{ display: "flex", alignItems: "center", gap: 6 }}><RefreshCw size={13} /> Running QC…</span>
-                  : "Run Quality Check"}
-              </button>
-
-              {qcError && (
-                <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--danger-bg)", borderRadius: 6, color: "var(--danger)", fontSize: 12 }}>{qcError}</div>
-              )}
-            </div>
-
-            <div style={{ marginTop: 12, padding: "14px 16px", background: "var(--bg-subtle)", borderRadius: 8, border: "1px solid var(--border)", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.8 }}>
-              <strong style={{ color: "var(--text-primary)" }}>QC Logic:</strong> Flights matched sequentially per day by departure order.{" "}
-              <strong>≤5 min diff</strong> → ✅ OK, use Oases value.{" "}
-              <strong>&gt;5 min diff</strong> → 🔴 flagged, highlight red.{" "}
-              <strong>Wingtrac only</strong> → 🟡 fill with Wingtrac, highlight yellow.{" "}
-              <strong>Oases only</strong> → 🔵 flag for review.
-            </div>
-
-            {qcResult && (
-              <div className="card animate-fade-in" style={{ padding: "24px", marginTop: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{qcResult.aircraft}</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{qcResult.month}</span>
-                </div>
-                <QCSummary result={qcResult} />
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12, padding: "8px 12px", background: "var(--bg-subtle)", borderRadius: 8, fontSize: 11 }}>
-                  <span style={{ color: "var(--text-muted)", fontWeight: 600, marginRight: 4 }}>LEGEND:</span>
-                  <span className="badge badge-ok"><CheckCircle size={9} /> OK</span>
-                  <span className="badge badge-warn"><AlertTriangle size={9} /> Wingtrac only</span>
-                  <span className="badge badge-danger"><XCircle size={9} /> Check techlog</span>
-                  <span className="badge badge-info"><Info size={9} /> Oases only</span>
-                </div>
-                <UtilisationTable entries={qcResult.entries} showQC={true} />
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-
-      <footer style={{ borderTop: "1px solid var(--border)", padding: "16px 24px", textAlign: "center", color: "var(--text-muted)", fontSize: 11, marginTop: 40 }}>
-        UtilTrack · Aircraft Utilisation Automation · Threshold: ±5 min discrepancy
-      </footer>
-    </div>
+          <span style={{ fontSize: 9, letterSpacing: "0.14em", color: "#2a2a2a", fontFamily: "var(--font-mono)" }}>
+            THRESHOLD ±5 MIN
+          </span>
+        </footer>
+      </div>
+    </>
   );
 }
