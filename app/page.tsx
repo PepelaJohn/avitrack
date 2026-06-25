@@ -648,7 +648,7 @@ export default function Home() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <span style={{ fontSize: 9, letterSpacing: "0.18em", color: "#2a2a2a", fontFamily: "var(--font-mono)" }}>
-            UTILTRACK · AIRCRAFT UTILISATION AUTOMATION
+            AviTrack · UTILISATION AUTOMATION
           </span>
           <span style={{ fontSize: 9, letterSpacing: "0.14em", color: "#2a2a2a", fontFamily: "var(--font-mono)" }}>
             THRESHOLD ±5 MIN

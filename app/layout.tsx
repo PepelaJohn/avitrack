@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UtilTrack — Aircraft Utilisation Manager",
+  title: "AviTrack — Aircraft Utilisation Manager",
   description: "Automate filling and QC of aircraft utilisation records",
 };
 

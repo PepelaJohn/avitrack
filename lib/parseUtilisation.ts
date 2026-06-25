@@ -124,7 +124,7 @@ export function generateFilledUtilisationExcel(
         const cellAddr = XLSX.utils.encode_cell({ r: rowIdx, c: colIdx });
         (ws["!comments"] as unknown[]).push({
           ref: cellAddr,
-          a: "UtilTrack",
+          a: "AviTrack",
           t: sector.comment,
         });
       }
