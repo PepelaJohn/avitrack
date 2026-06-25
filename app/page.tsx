@@ -436,19 +436,7 @@ export default function Home() {
           position: "sticky", top: 0, zIndex: 100,
           background: "#000",
         }}>
-          {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 26, height: 26,
-              border: "1.5px solid #fff",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Plane size={12} color="#fff" />
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.12em" }}>
-              UTIL<span style={{ color: "#555" }}>TRACK</span>
-            </span>
-          </div>
+         
 
           {/* Nav links — Montek style */}
           <nav style={{ display: "flex", gap: 0 }}>
@@ -494,17 +482,12 @@ export default function Home() {
 
         {/* ── HERO ── */}
         <div style={{ padding: "36px 32px 28px", borderBottom: "1px solid #111" }}>
-          <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "#333", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
-            AIRCRAFT UTILISATION MANAGER · v2.0
-          </div>
+          
           <div style={{ fontSize: "clamp(56px,9vw,88px)", fontWeight: 700, lineHeight: 0.88, letterSpacing: "-0.03em", userSelect: "none" }}>
-            <div style={{ color: "#fff" }}>UTIL</div>
+            <div style={{ color: "#fff" }}>AVI</div>
             <div style={{ color: "transparent", WebkitTextStroke: "1px #2a2a2a" }}>TRACK</div>
           </div>
-          <p style={{ marginTop: 14, fontSize: 11, color: "#444", letterSpacing: "0.04em", maxWidth: 360, lineHeight: 1.8 }}>
-            Automated sector reconciliation between Oases and Wingtrac.
-            Discrepancies &gt;5 min flagged for techlog review.
-          </p>
+   
         </div>
 
         {/* ── BODY ── */}
